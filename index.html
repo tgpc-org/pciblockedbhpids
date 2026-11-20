@@ -157,30 +157,14 @@
         return;
       }
 
-      // Looks like a full ID but malformed
+      // Looks like a full ID but malformed (non-digit where digit expected)
       if (qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) {
         result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
         return;
       }
 
-      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
-
-      // Partial → suggestions only (max 5)
-      const matches = [];
-      let total = 0;
-      for (const id of ids) {
-        if (key(id).includes(qk)) { total++; if (matches.length < 5) matches.push(id); }
-      }
-      if (total === 0) {
-        result.innerHTML = '<p class="muted">No matching IDs found.</p>';
-        return;
-      }
-      result.innerHTML =
-        '<div class="count">' + total.toLocaleString('en-IN') + ' match' + (total === 1 ? '' : 'es') + ' — tap to check one:</div>' +
-        '<div class="chips">' + matches.map(m => '<button class="chip" data-id="' + m + '">' + m + '</button>').join('') + '</div>';
-      result.querySelectorAll('.chip').forEach(c => {
-        c.addEventListener('click', () => { input.value = c.dataset.id; input.dispatchEvent(new Event('input')); });
-      });
+      // Anything else → prompt for full ID
+      result.innerHTML = '<p class="muted">Type the full ID to check — partial numbers are not searched.</p>';
     }
 
     function norm(s) { return (s || '').trim(); }
