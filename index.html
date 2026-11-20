@@ -124,6 +124,9 @@
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
       if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
 
+      const qk = key(normalize(raw));
+      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
+
       const q = normalize(raw);
       const qk = key(q);
 
