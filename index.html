@@ -133,40 +133,16 @@
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
-    // Build shareable URL for a result
-    function setResultUrl(id) {
-      const url = new URL(window.location.href);
-      if (id) {
-        url.searchParams.set('result', id);
-      } else {
-        url.searchParams.delete('result');
-      }
-      window.history.replaceState({}, '', url);
-    }
-
-    // Check for shared result on page load
-    function checkSharedResult() {
-      const params = new URLSearchParams(window.location.search);
-      const shared = params.get('result');
-      if (shared) {
-        input.value = shared;
-        clearBtn.hidden = false;
-        // render will be called after data loads
-        return shared;
-      }
-      return null;
-    }
-
-    function render(sharedId = null) {
+    function render() {
       const raw = input.value;
       clearBtn.hidden = !raw;
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
-      if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; setResultUrl(null); return; }
+      if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
 
       const q = normalize(raw);
       const qk = key(q);
 
-      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; setResultUrl(null); return; }
+      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
 
       // Complete, well-formed ID (4+ digits with internal hyphen) → single definitive answer
       const wellFormed = q.split('-').length >= 4 && /^BHP\d{2}\d{4,}$/.test(qk);
@@ -179,14 +155,12 @@
               '<div class="id">' + exact + '</div>' +
               '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
             '</div>';
-          setResultUrl(exact);
         } else {
           result.innerHTML =
             '<div class="card ok">' +
               '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
               '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
             '</div>';
-          setResultUrl(q);
         }
         return;
       }
@@ -194,13 +168,11 @@
       // Looks like a full ID but malformed (non-digit where digit expected)
       if ((qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) || (qk.startsWith('BHP') && q.split('-').length < 3 && qk.length >= 6)) {
         result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
-        setResultUrl(null);
         return;
       }
 
       // Anything else → prompt for full ID
       result.innerHTML = '<p class="muted">Type the full ID to check — partial numbers are not searched.</p>';
-      setResultUrl(null);
     }
 
     // Keyboard shortcuts
@@ -225,9 +197,7 @@
         ids = Array.isArray(data) ? data : [];
         loaded = true;
         countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
-        // Check for shared result after data loads
-        const shared = checkSharedResult();
-        render(shared);
+        render();
       })
       .catch(err => {
         result.innerHTML = '<p class="error">Could not load the blocked ID list: ' + err.message + '</p>';
