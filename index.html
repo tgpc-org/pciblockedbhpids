@@ -89,17 +89,6 @@
     .foot a:hover { color: var(--ink); }
     .kbd-hint { font-size: 0.7rem; color: var(--muted); margin-top: 8px; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     .kbd-hint kbd { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; }
-    .recent { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-    .recent-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .recent-chip {
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--ink); padding: 6px 10px; border-radius: 999px;
-      font-size: 0.8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      cursor: pointer; transition: background var(--transition-fast), border-color var(--transition-fast);
-    }
-    .recent-chip:hover { background: #fff; border-color: var(--link); }
-    .recent-chip:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .error-card { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 18px 20px; }
     .error-title { color: var(--red); font-weight: 700; margin-bottom: 8px; }
     .retry-btn {
@@ -136,8 +125,7 @@
       <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
 
-    <div id="result" class="result" aria-live="polite" aria-atomic="true"></div><div id="recent-chips" class="recent-chips"></div>
-    </div>
+    <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
 
     <p class="kbd-hint">Press <kbd>Ctrl</kbd>+<kbd>K</kbd> or <kbd>/</kbd> to focus search · <kbd>Esc</kbd> to clear</p>
 
@@ -152,8 +140,6 @@
     const result = document.getElementById('result');
     const clearBtn = document.getElementById('clear');
     const countEl = document.getElementById('count');
-    const recentSection = document.getElementById('recent');
-    const recentChips = document.getElementById('recent-chips');
 
     let ids = [];
     let loaded = false;
@@ -173,12 +159,6 @@
     }
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
-    }
-      recentSection.hidden = false;
-      recentChips.innerHTML = recent.map(r =>
-        '<button type="button" class="recent-chip" data-id="' + r.replace(/"/g, '"') + '" tabindex="0">' + r + '</button>'
-      ).join('');
-    }
 
     function copyToClipboard(text, btn) {
       navigator.clipboard.writeText(text).then(() => {
