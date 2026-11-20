@@ -16,6 +16,9 @@
       --link: #2563eb;
       --red: #ef4444;
       --green: #00b359;
+      --focus-ring: rgba(37, 99, 235, 0.4);
+      --transition-fast: 0.15s ease;
+      --transition-med: 0.2s ease;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
@@ -29,8 +32,8 @@
     .sub { font-size: 0.875rem; color: var(--muted); margin: 0 0 24px; }
     .sub a { color: var(--link); font-weight: 600; text-decoration: none; }
     .sub a:hover { text-decoration: underline; }
-    .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
-    .search:focus-within { border-color: var(--link); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); background: #fff; }
+    .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+    .search:focus-within { border-color: var(--link); box-shadow: 0 0 0 3px var(--focus-ring); background: #fff; }
     .prefix { padding: 12px 0 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--muted); user-select: none; white-space: nowrap; }
     input {
       flex: 1; min-width: 0; border: none; background: transparent;
@@ -38,15 +41,26 @@
       font-size: 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       outline: none;
     }
+    input:focus-visible {
+      outline: none;
+    }
+    .search:focus-within .prefix { color: var(--link); }
     .clear {
       width: 24px; height: 24px; border: none; border-radius: 999px;
       background: var(--border); color: var(--muted); cursor: pointer;
       font-size: 1rem; line-height: 1; padding: 0; margin-right: 10px; flex-shrink: 0;
+      transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
     }
     .clear:hover { background: #d1d5db; color: var(--ink); }
+    .clear:active { transform: scale(0.95); }
     .clear[hidden] { display: none; }
+    .clear:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .result { margin-top: 18px; min-height: 3.5rem; }
-    .card { border-radius: 12px; padding: 18px 20px; }
+    .card { border-radius: 12px; padding: 18px 20px; opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: no-preference) {
+      .card { transition: opacity var(--transition-med), transform var(--transition-med); }
+      .card[hidden] { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+    }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
     .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
@@ -61,6 +75,7 @@
     .hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
     .foot { margin-top: 36px; font-size: 0.7rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.5; }
     .foot a { color: var(--muted); }
+    .foot a:hover { color: var(--ink); }
     @media (max-width: 480px) {
       .wrap { padding: 20px 14px 40px; }
       h1 { font-size: 1.25rem; }
@@ -82,10 +97,10 @@
       <span class="prefix">BH-P-</span>
       <label for="bhq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Search BH-P ID</label>
       <input id="bhq" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-             placeholder="25-11457" />
-      <button id="clear" class="clear" aria-label="Clear" hidden>×</button>
+             placeholder="e.g., 25-11457 or BH-P-25-11457"
+             autofocus />
+      <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
-
 
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
 
@@ -104,7 +119,7 @@
     let ids = [];
     let loaded = false;
 
-    // Prepend BH-P- if missing — no auto-formatting, user must type the exact number
+    // Normalize input: prepend BH-P- if missing, no auto-formatting
     function normalize(raw) {
       let v = (raw || '').trim().toUpperCase().replace(/\s+/g, '');
       if (v && !v.startsWith('BH-P-') && !v.startsWith('BHP')) {
@@ -118,17 +133,40 @@
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
-    function render() {
+    // Build shareable URL for a result
+    function setResultUrl(id) {
+      const url = new URL(window.location.href);
+      if (id) {
+        url.searchParams.set('result', id);
+      } else {
+        url.searchParams.delete('result');
+      }
+      window.history.replaceState({}, '', url);
+    }
+
+    // Check for shared result on page load
+    function checkSharedResult() {
+      const params = new URLSearchParams(window.location.search);
+      const shared = params.get('result');
+      if (shared) {
+        input.value = shared;
+        clearBtn.hidden = false;
+        // render will be called after data loads
+        return shared;
+      }
+      return null;
+    }
+
+    function render(sharedId = null) {
       const raw = input.value;
       clearBtn.hidden = !raw;
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
-      if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
-
-      const qk = key(normalize(raw));
-      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
+      if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; setResultUrl(null); return; }
 
       const q = normalize(raw);
       const qk = key(q);
+
+      if (qk.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; setResultUrl(null); return; }
 
       // Complete, well-formed ID (4+ digits with internal hyphen) → single definitive answer
       const wellFormed = q.split('-').length >= 4 && /^BHP\d{2}\d{4,}$/.test(qk);
@@ -141,12 +179,14 @@
               '<div class="id">' + exact + '</div>' +
               '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
             '</div>';
+          setResultUrl(exact);
         } else {
           result.innerHTML =
             '<div class="card ok">' +
               '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
               '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
             '</div>';
+          setResultUrl(q);
         }
         return;
       }
@@ -154,26 +194,40 @@
       // Looks like a full ID but malformed (non-digit where digit expected)
       if ((qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) || (qk.startsWith('BHP') && q.split('-').length < 3 && qk.length >= 6)) {
         result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
+        setResultUrl(null);
         return;
       }
 
       // Anything else → prompt for full ID
       result.innerHTML = '<p class="muted">Type the full ID to check — partial numbers are not searched.</p>';
+      setResultUrl(null);
     }
 
-    function norm(s) { return (s || '').trim(); }
+    // Keyboard shortcuts
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        input.value = '';
+        input.focus();
+        render();
+      }
+    });
 
+    // Event listeners
     input.addEventListener('input', render);
     clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); });
+    // Keep clear button visibility in sync
     input.addEventListener('input', () => { clearBtn.hidden = !input.value; });
 
+    // Load data
     fetch(DATA_URL)
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(data => {
         ids = Array.isArray(data) ? data : [];
         loaded = true;
         countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
-        render();
+        // Check for shared result after data loads
+        const shared = checkSharedResult();
+        render(shared);
       })
       .catch(err => {
         result.innerHTML = '<p class="error">Could not load the blocked ID list: ' + err.message + '</p>';
