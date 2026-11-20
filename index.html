@@ -6,6 +6,7 @@
   <title>Blocked BH-P IDs — PCI Circular IT-11/3/2026-IT</title>
   <meta name="description" content="Check whether a BH-P registration number is on the Pharmacy Council of India blocked list (PCI Circular IT-11/3/2026-IT, 19 Nov 2026). 44,730 IDs indexed." />
   <meta name="robots" content="index,follow" />
+  <link rel="preconnect" href="https://pub-4591c8c5282040459ade2ed1e5e3d5be.r2.dev" crossorigin />
   <style>
     :root {
       --bg: #ffffff;
@@ -32,7 +33,7 @@
     .sub { font-size: 0.875rem; color: var(--muted); margin: 0 0 24px; }
     .sub a { color: var(--link); font-weight: 600; text-decoration: none; }
     .sub a:hover { text-decoration: underline; }
-    .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+    .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); position: relative; }
     .search:focus-within { border-color: var(--link); box-shadow: 0 0 0 3px var(--focus-ring); background: #fff; }
     .prefix { padding: 12px 0 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--muted); user-select: none; white-space: nowrap; }
     input {
@@ -41,9 +42,7 @@
       font-size: 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       outline: none;
     }
-    input:focus-visible {
-      outline: none;
-    }
+    input:focus-visible { outline: none; }
     .search:focus-within .prefix { color: var(--link); }
     .clear {
       width: 24px; height: 24px; border: none; border-radius: 999px;
@@ -63,12 +62,24 @@
     }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
     .dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
     .dot.red { background: var(--red); }
     .dot.green { background: #00cc66; }
     .card-title.red { color: var(--red); }
     .card-title.green { color: var(--green); }
+    .copy-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); padding: 6px 10px; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+    .copy-btn:hover { background: #fff; color: var(--ink); border-color: var(--muted); }
+    .copy-btn:active { transform: scale(0.98); }
+    .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+    .copy-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .id { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); word-break: break-all; }
     .help { margin-top: 8px; font-size: 0.85rem; color: var(--ink); opacity: 0.8; line-height: 1.5; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
@@ -76,9 +87,32 @@
     .foot { margin-top: 36px; font-size: 0.7rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.5; }
     .foot a { color: var(--muted); }
     .foot a:hover { color: var(--ink); }
+    .kbd-hint { font-size: 0.7rem; color: var(--muted); margin-top: 8px; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .kbd-hint kbd { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; }
+    .recent { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .recent-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .recent-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--ink); padding: 6px 10px; border-radius: 999px;
+      font-size: 0.8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      cursor: pointer; transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+    .recent-chip:hover { background: #fff; border-color: var(--link); }
+    .recent-chip:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .error-card { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 18px 20px; }
+    .error-title { color: var(--red); font-weight: 700; margin-bottom: 8px; }
+    .retry-btn {
+      background: var(--link); color: #fff; border: none; border-radius: 6px;
+      padding: 8px 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .retry-btn:hover { background: #1d4ed8; }
+    .retry-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     @media (max-width: 480px) {
       .wrap { padding: 20px 14px 40px; }
       h1 { font-size: 1.25rem; }
+      .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
     }
   </style>
 </head>
@@ -93,7 +127,7 @@
       <span id="count"></span>
     </p>
 
-    <div class="search">
+    <div class="search" role="search">
       <span class="prefix">BH-P-</span>
       <label for="bhq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Search BH-P ID</label>
       <input id="bhq" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
@@ -103,6 +137,13 @@
     </div>
 
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="recent" class="recent" hidden>
+      <div class="recent-label">Recent searches</div>
+      <div id="recent-chips" class="recent-chips"></div>
+    </div>
+
+    <p class="kbd-hint">Press <kbd>Ctrl</kbd>+<kbd>K</kbd> or <kbd>/</kbd> to focus search · <kbd>Esc</kbd> to clear</p>
 
     <footer class="foot">
       Data: PCI Circular IT-11/3/2026-IT, Annexure-1 (44,730 IDs). Unofficial reference — verify against the official circular before acting.
@@ -115,9 +156,13 @@
     const result = document.getElementById('result');
     const clearBtn = document.getElementById('clear');
     const countEl = document.getElementById('count');
+    const recentSection = document.getElementById('recent');
+    const recentChips = document.getElementById('recent-chips');
 
     let ids = [];
     let loaded = false;
+    let fetchRetryCount = 0;
+    const MAX_RETRIES = 3;
 
     // Normalize input: prepend BH-P- if missing, no auto-formatting
     function normalize(raw) {
@@ -132,6 +177,46 @@
     }
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+    // Recent searches (localStorage)
+    const RECENT_KEY = 'tgpc-blocked-recent';
+    const MAX_RECENT = 8;
+
+    function getRecent() {
+      try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveRecent(id) {
+      const recent = getRecent().filter(x => x !== id);
+      recent.unshift(id);
+      if (recent.length > MAX_RECENT) recent.pop();
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+      renderRecent();
+    }
+
+    function renderRecent() {
+      const recent = getRecent();
+      if (recent.length === 0) { recentSection.hidden = true; return; }
+      recentSection.hidden = false;
+      recentChips.innerHTML = recent.map(r =>
+        '<button type="button" class="recent-chip" data-id="' + r.replace(/"/g, '"') + '" tabindex="0">' + r + '</button>'
+      ).join('');
+    }
+
+    function copyToClipboard(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      }).catch(() => {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    }
 
     function render() {
       const raw = input.value;
@@ -150,18 +235,30 @@
         const exact = ids.find(id => key(id) === qk);
         if (exact) {
           result.innerHTML =
-            '<div class="card blocked">' +
-              '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
+            '<div class="card blocked" role="status">' +
+              '<div class="card-header">' +
+                '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
+                '<button type="button" class="copy-btn" data-copy="' + exact + '" aria-label="Copy ID">Copy</button>' +
+              '</div>' +
               '<div class="id">' + exact + '</div>' +
               '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
             '</div>';
+          saveRecent(exact);
         } else {
           result.innerHTML =
-            '<div class="card ok">' +
-              '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
+            '<div class="card ok" role="status">' +
+              '<div class="card-header">' +
+                '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
+                '<button type="button" class="copy-btn" data-copy="' + q + '" aria-label="Copy ID">Copy</button>' +
+              '</div>' +
               '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
             '</div>';
+          saveRecent(q);
         }
+        // Attach copy handlers
+        result.querySelectorAll('.copy-btn').forEach(btn => {
+          btn.addEventListener('click', () => copyToClipboard(btn.dataset.copy, btn));
+        });
         return;
       }
 
@@ -176,8 +273,20 @@
     }
 
     // Keyboard shortcuts
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
+    function focusSearch() {
+      input.focus();
+      input.select();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd+K or / (when not typing in input)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        focusSearch();
+      } else if (e.key === '/' && document.activeElement !== input) {
+        e.preventDefault();
+        focusSearch();
+      } else if (e.key === 'Escape') {
         input.value = '';
         input.focus();
         render();
@@ -187,21 +296,51 @@
     // Event listeners
     input.addEventListener('input', render);
     clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); });
-    // Keep clear button visibility in sync
     input.addEventListener('input', () => { clearBtn.hidden = !input.value; });
 
-    // Load data
-    fetch(DATA_URL)
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(data => {
-        ids = Array.isArray(data) ? data : [];
-        loaded = true;
-        countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
+    // Recent chip clicks
+    recentChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.recent-chip');
+      if (chip) {
+        input.value = chip.dataset.id;
+        clearBtn.hidden = false;
         render();
-      })
-      .catch(err => {
-        result.innerHTML = '<p class="error">Could not load the blocked ID list: ' + err.message + '</p>';
-      });
+      }
+    });
+
+    // Load data with retry
+    function loadData() {
+      fetch(DATA_URL)
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(data => {
+          ids = Array.isArray(data) ? data : [];
+          loaded = true;
+          fetchRetryCount = 0;
+          countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
+          renderRecent();
+          render();
+        })
+        .catch(err => {
+          if (fetchRetryCount < MAX_RETRIES) {
+            fetchRetryCount++;
+            const delay = Math.min(1000 * fetchRetryCount, 5000);
+            setTimeout(loadData, delay);
+            return;
+          }
+          result.innerHTML =
+            '<div class="error-card">' +
+              '<div class="error-title">Could not load the blocked ID list</div>' +
+              '<p class="help">' + err.message + '</p>' +
+              '<button type="button" class="retry-btn" id="retry-btn">Try again</button>' +
+            '</div>';
+          document.getElementById('retry-btn').addEventListener('click', () => {
+            fetchRetryCount = 0;
+            loadData();
+          });
+        });
+    }
+
+    loadData();
   </script>
 </body>
 </html>
