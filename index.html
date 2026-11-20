@@ -29,27 +29,22 @@
     .sub { font-size: 0.875rem; color: var(--muted); margin: 0 0 24px; }
     .sub a { color: var(--link); font-weight: 600; text-decoration: none; }
     .sub a:hover { text-decoration: underline; }
-    .search { position: relative; }
+    .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+    .search:focus-within { border-color: var(--link); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); background: #fff; }
+    .prefix { padding: 12px 0 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--muted); user-select: none; white-space: nowrap; }
     input {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--ink);
-      border-radius: 10px;
-      padding: 12px 40px 12px 14px;
-      font-size: 1rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      flex: 1; min-width: 0; border: none; background: transparent;
+      color: var(--ink); padding: 12px 14px 12px 4px;
+      font-size: 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       outline: none;
-      transition: border-color .15s, box-shadow .15s;
     }
-    input:focus { border-color: var(--link); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); background: #fff; }
     .clear {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
       width: 24px; height: 24px; border: none; border-radius: 999px;
       background: var(--border); color: var(--muted); cursor: pointer;
-      font-size: 1rem; line-height: 1; padding: 0;
+      font-size: 1rem; line-height: 1; padding: 0; margin-right: 10px; flex-shrink: 0;
     }
     .clear:hover { background: #d1d5db; color: var(--ink); }
+    .clear[hidden] { display: none; }
     .result { margin-top: 18px; min-height: 3.5rem; }
     .card { border-radius: 12px; padding: 18px 20px; }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
@@ -63,24 +58,9 @@
     .id { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); word-break: break-all; }
     .help { margin-top: 8px; font-size: 0.85rem; color: var(--ink); opacity: 0.8; line-height: 1.5; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
-    .count { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.8rem;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--ink);
-      cursor: pointer;
-      transition: background .12s, border-color .12s;
-    }
-    .chip:hover { background: #e5e7eb; border-color: var(--link); }
-    .error { font-size: 0.85rem; color: var(--red); padding: 16px 0; }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
     .foot { margin-top: 36px; font-size: 0.7rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.5; }
     .foot a { color: var(--muted); }
-    .hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
     @media (max-width: 480px) {
       .wrap { padding: 20px 14px 40px; }
       h1 { font-size: 1.25rem; }
@@ -99,20 +79,18 @@
     </p>
 
     <div class="search">
+      <span class="prefix">BH-P-</span>
       <label for="bhq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Search BH-P ID</label>
       <input id="bhq" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-             placeholder="Type your BH-P number, e.g. BH-P-25-11457" />
+             placeholder="25-11457" />
       <button id="clear" class="clear" aria-label="Clear" hidden>×</button>
     </div>
-    <p class="hint">Hyphens and spaces are optional — <code>BHP2511457</code> works too.</p>
+    <p class="hint">Type the year and number — hyphens and spaces are optional. <code>2511457</code> works too.</p>
 
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
 
     <footer class="foot">
       Data: PCI Circular IT-11/3/2026-IT, Annexure-1 (44,730 IDs). Unofficial reference — verify against the official circular before acting.
-      <span style="display:block;margin-top:6px">
-        <img src="https://hits.sh/tgpc-org.github.io/pciblockedbhpids.svg?style=flat-square&label=visits&color=2563eb&labelColor=6b7280" alt="visitor count" style="height:16px;vertical-align:middle" />
-      </span>
     </footer>
   </main>
 
@@ -126,18 +104,34 @@
     let ids = [];
     let loaded = false;
 
+    // Prepend BH-P- if missing, so matching works with or without the prefix
+    function normalize(raw) {
+      let v = (raw || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (v && !v.startsWith('BH-P-') && !v.startsWith('BHP')) {
+        v = 'BH-P-' + v;
+      }
+      // Insert hyphens if user typed digits only after BH-P
+      if (/^BHP\d+$/.test(v.replace(/-/g, ''))) {
+        const digits = v.replace(/[^0-9]/g, '');
+        if (digits.length >= 2) {
+          v = 'BH-P-' + digits.slice(0, 2) + (digits.length > 2 ? '-' + digits.slice(2) : '');
+        }
+      }
+      return v;
+    }
+
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
     function render() {
       const raw = input.value;
-      const q = norm(raw);
       clearBtn.hidden = !raw;
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
-      if (q.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
+      if (raw.length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
 
+      const q = normalize(raw);
       const qk = key(q);
 
-      // Complete, well-formed ID → single definitive answer
+      // Complete, well-formed ID (4+ digits) → single definitive answer
       if (/^BHP\d{2}\d{4,}$/.test(qk) || ids.indexOf(q) !== -1) {
         const exact = ids.find(id => key(id) === qk);
         if (exact) {
