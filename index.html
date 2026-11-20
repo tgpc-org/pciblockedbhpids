@@ -138,7 +138,7 @@
       const qk = key(q);
 
       // Complete, well-formed ID → single definitive answer
-      if (/^BHP\d{2}\d{3,}$/.test(qk)) {
+      if (/^BHP\d{2}\d{4,}$/.test(qk) || ids.indexOf(q) !== -1) {
         const exact = ids.find(id => key(id) === qk);
         if (exact) {
           result.innerHTML =
