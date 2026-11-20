@@ -158,7 +158,7 @@
       }
 
       // Looks like a full ID but malformed
-      if (qk.startsWith('BHP') && qk.length >= 6) {
+      if (qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) {
         result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
         return;
       }
