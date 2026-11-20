@@ -136,11 +136,7 @@
       <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
 
-    <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
-
-    <div id="recent" class="recent" hidden>
-      <div class="recent-label">Recent searches</div>
-      <div id="recent-chips" class="recent-chips"></div>
+    <div id="result" class="result" aria-live="polite" aria-atomic="true"></div><div id="recent-chips" class="recent-chips"></div>
     </div>
 
     <p class="kbd-hint">Press <kbd>Ctrl</kbd>+<kbd>K</kbd> or <kbd>/</kbd> to focus search · <kbd>Esc</kbd> to clear</p>
@@ -177,27 +173,7 @@
     }
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
-
-    // Recent searches (localStorage)
-    const RECENT_KEY = 'tgpc-blocked-recent';
-    const MAX_RECENT = 8;
-
-    function getRecent() {
-      try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
-      catch { return []; }
     }
-
-    function saveRecent(id) {
-      const recent = getRecent().filter(x => x !== id);
-      recent.unshift(id);
-      if (recent.length > MAX_RECENT) recent.pop();
-      localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
-      renderRecent();
-    }
-
-    function renderRecent() {
-      const recent = getRecent();
-      if (recent.length === 0) { recentSection.hidden = true; return; }
       recentSection.hidden = false;
       recentChips.innerHTML = recent.map(r =>
         '<button type="button" class="recent-chip" data-id="' + r.replace(/"/g, '"') + '" tabindex="0">' + r + '</button>'
@@ -243,7 +219,6 @@
               '<div class="id">' + exact + '</div>' +
               '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
             '</div>';
-          saveRecent(exact);
         } else {
           result.innerHTML =
             '<div class="card ok" role="status">' +
@@ -253,7 +228,6 @@
               '</div>' +
               '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
             '</div>';
-          saveRecent(q);
         }
         // Attach copy handlers
         result.querySelectorAll('.copy-btn').forEach(btn => {
@@ -298,16 +272,6 @@
     clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); });
     input.addEventListener('input', () => { clearBtn.hidden = !input.value; });
 
-    // Recent chip clicks
-    recentChips.addEventListener('click', (e) => {
-      const chip = e.target.closest('.recent-chip');
-      if (chip) {
-        input.value = chip.dataset.id;
-        clearBtn.hidden = false;
-        render();
-      }
-    });
-
     // Load data with retry
     function loadData() {
       fetch(DATA_URL)
@@ -317,7 +281,6 @@
           loaded = true;
           fetchRetryCount = 0;
           countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
-          renderRecent();
           render();
         })
         .catch(err => {
