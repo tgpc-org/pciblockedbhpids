@@ -176,6 +176,7 @@
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(data => {
         ids = Array.isArray(data) ? data : [];
+        loaded = true;
         countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
         render();
       })
