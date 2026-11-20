@@ -85,7 +85,7 @@
              placeholder="25-11457" />
       <button id="clear" class="clear" aria-label="Clear" hidden>×</button>
     </div>
-    <p class="hint">Type the year and number — hyphens and spaces are optional. <code>2511457</code> works too.</p>
+
 
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
 
@@ -104,18 +104,14 @@
     let ids = [];
     let loaded = false;
 
-    // Prepend BH-P- if missing, so matching works with or without the prefix
+    // Prepend BH-P- if missing — no auto-formatting, user must type the exact number
     function normalize(raw) {
       let v = (raw || '').trim().toUpperCase().replace(/\s+/g, '');
       if (v && !v.startsWith('BH-P-') && !v.startsWith('BHP')) {
         v = 'BH-P-' + v;
       }
-      // Insert hyphens if user typed digits only after BH-P
-      if (/^BHP\d+$/.test(v.replace(/-/g, ''))) {
-        const digits = v.replace(/[^0-9]/g, '');
-        if (digits.length >= 2) {
-          v = 'BH-P-' + digits.slice(0, 2) + (digits.length > 2 ? '-' + digits.slice(2) : '');
-        }
+      if (v.startsWith('BHP') && !v.startsWith('BH-P-')) {
+        v = 'BH-P-' + v.slice(3);
       }
       return v;
     }
@@ -131,8 +127,9 @@
       const q = normalize(raw);
       const qk = key(q);
 
-      // Complete, well-formed ID (4+ digits) → single definitive answer
-      if (/^BHP\d{2}\d{4,}$/.test(qk) || ids.indexOf(q) !== -1) {
+      // Complete, well-formed ID (4+ digits with internal hyphen) → single definitive answer
+      const wellFormed = q.split('-').length >= 4 && /^BHP\d{2}\d{4,}$/.test(qk);
+      if (wellFormed || ids.indexOf(q) !== -1) {
         const exact = ids.find(id => key(id) === qk);
         if (exact) {
           result.innerHTML =
@@ -152,7 +149,7 @@
       }
 
       // Looks like a full ID but malformed (non-digit where digit expected)
-      if (qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) {
+      if ((qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) || (qk.startsWith('BHP') && q.split('-').length < 3 && qk.length >= 6)) {
         result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
         return;
       }
