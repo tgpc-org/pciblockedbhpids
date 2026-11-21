@@ -347,11 +347,26 @@
     }
 
     yearInput.addEventListener('input', () => {
-      const digits = yearInput.value.replace(/\D/g, '');
+      // Only the decade prefix (2) and the valid year digits (3-6) may be entered.
+      const digits = yearInput.value.replace(/\D/g, '').replace(/[^23456]/g, '');
 
       if (digits.length >= 2) {
-        yearInput.value = digits.charAt(1);
-        advance(digits.slice(2));
+        // Absorb a leading "2" (the fixed decade) when followed by a valid year digit.
+        if (digits.charAt(0) === '2' && /[3456]/.test(digits.charAt(1))) {
+          yearInput.value = digits.charAt(1);
+          advance(digits.slice(2));
+          render();
+          return;
+        }
+        // No decade prefix: keep the first valid year digit.
+        const first = digits.split('').find(c => /[3456]/.test(c));
+        if (first) {
+          yearInput.value = first;
+          advance('');
+          render();
+          return;
+        }
+        yearInput.value = '';
         render();
         return;
       }
