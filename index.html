@@ -67,6 +67,7 @@
     }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
+    .card.suggest { background: var(--surface); border: 1px solid var(--border); }
     .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
     .dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
     .dot.red { background: var(--red); }
@@ -234,6 +235,25 @@
       );
     }
 
+    // Suggestions are NOT a verdict — the user did not type this exact ID, so
+    // we must not say "Blocked". Show them as "Did you mean…?" instead.
+    function suggestCard(alts) {
+      const rows = alts.map(s =>
+        '<div style="margin-top:10px">' +
+          '<div class="id">' + s.id + '</div>' +
+          '<p class="help" style="margin-top:4px">' + s.why + ' It is on the blocked list.</p>' +
+          '<button type="button" class="use" data-id="' + s.id + '">Use this ID</button>' +
+        '</div>'
+      ).join('');
+      return (
+        '<div class="card suggest" role="status">' +
+          '<div class="card-title">Did you mean one of these?</div>' +
+          rows +
+          '<p class="help" style="margin-top:10px">Your entry does not exactly match a blocked ID. Check the digits and any leading zeros.</p>' +
+        '</div>'
+      );
+    }
+
     function render() {
       const { y, n, q } = currentId();
       clearBtn.hidden = !(y || n);
@@ -264,7 +284,7 @@
       // A complete ID under another year, or the zero-padded form, beats a bare
       // "keep typing" — it is a real record either way.
       const alt = suggestions(y, n);
-      if (alt.length) { result.innerHTML = blockedCard(alt[0].id, alt[0].why); bindUse(); return; }
+      if (alt.length) { result.innerHTML = suggestCard(alt); bindUse(); return; }
 
       const k = key(q);
       if (hasPrefix(k)) {
