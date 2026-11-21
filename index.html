@@ -62,24 +62,12 @@
     }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
     .dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
     .dot.red { background: var(--red); }
     .dot.green { background: #00cc66; }
     .card-title.red { color: var(--red); }
     .card-title.green { color: var(--green); }
-    .copy-btn {
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--muted); padding: 6px 10px; border-radius: 6px;
-      font-size: 0.75rem; font-weight: 600; cursor: pointer;
-      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-      white-space: nowrap;
-    }
-    .copy-btn:hover { background: #fff; color: var(--ink); border-color: var(--muted); }
-    .copy-btn:active { transform: scale(0.98); }
-    .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
-    .copy-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .id { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); word-break: break-all; }
     .help { margin-top: 8px; font-size: 0.85rem; color: var(--ink); opacity: 0.8; line-height: 1.5; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
@@ -99,7 +87,6 @@
     @media (max-width: 480px) {
       .wrap { padding: 20px 14px 40px; }
       h1 { font-size: 1.25rem; }
-      .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
     }
   </style>
 </head>
@@ -118,7 +105,7 @@
       <span class="prefix">BH-P-</span>
       <label for="bhq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Search BH-P ID</label>
       <input id="bhq" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-             placeholder="YY-012345"
+             placeholder="2Y-NNNNN"
              autofocus />
       <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
@@ -157,20 +144,6 @@
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
-    function copyToClipboard(text, btn) {
-      navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = 'Copy';
-          btn.classList.remove('copied');
-        }, 1500);
-      }).catch(() => {
-        btn.textContent = 'Failed';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-      });
-    }
-
     function render() {
       const raw = input.value;
       clearBtn.hidden = !raw;
@@ -189,33 +162,23 @@
         if (exact) {
           result.innerHTML =
             '<div class="card blocked" role="status">' +
-              '<div class="card-header">' +
-                '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
-                '<button type="button" class="copy-btn" data-copy="' + exact + '" aria-label="Copy ID">Copy</button>' +
-              '</div>' +
+              '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
               '<div class="id">' + exact + '</div>' +
               '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
             '</div>';
         } else {
           result.innerHTML =
             '<div class="card ok" role="status">' +
-              '<div class="card-header">' +
-                '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
-                '<button type="button" class="copy-btn" data-copy="' + q + '" aria-label="Copy ID">Copy</button>' +
-              '</div>' +
+              '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
               '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
             '</div>';
         }
-        // Attach copy handlers
-        result.querySelectorAll('.copy-btn').forEach(btn => {
-          btn.addEventListener('click', () => copyToClipboard(btn.dataset.copy, btn));
-        });
         return;
       }
 
       // Looks like a full ID but malformed (non-digit where digit expected)
       if ((qk.startsWith('BHP') && qk.length >= 6 && !/^BHP\d+$/.test(qk)) || (qk.startsWith('BHP') && q.split('-').length < 3 && qk.length >= 6)) {
-        result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-YY-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
+        result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-2Y-NNNNN</strong> (e.g. BH-P-25-11457).</p>';
         return;
       }
 
