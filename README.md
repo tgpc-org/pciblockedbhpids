@@ -27,11 +27,28 @@ python3 -m http.server 8000
 - **Netlify** — drag-and-drop
 - **R2** — upload as static assets
 
+## How the check works
+
+The annexure prints IDs as `BH-P-YY-NNNN` where the number after the dash is
+**3 to 10 digits and leading zeros are significant** (3,865 IDs start with `0`,
+mostly the 10-digit 2024 registrations). So:
+
+- `BH-P-` and the decade digit `2` are fixed in the UI; you type the year digit
+  (`3`–`6`, i.e. 2023–2026) and then the number.
+- Matching is a sorted binary search over normalised IDs — exact match means
+  blocked.
+- While typing, the result stays at "Keep typing…" as long as some blocked ID
+  still starts with what you have entered, so a partial number can never produce
+  a "Not on the blocked list" answer.
+- If the only close record is the zero-padded form (`BH-P-24-770508730` →
+  `BH-P-24-0770508730`) or the same number under another year, that record is
+  offered instead of a false "clear".
+
 ## Update when PCI publishes a new list
 
 1. Regenerate `data/blocked-bhp-YYYY-MM-DD.json`
 2. Update `DATA_URL` in `index.html`
-3. Update the circular link and the count in the subtitle
+3. Update the circular link, the format hint and the year counts in the footer
 4. Redeploy
 
 ## Source
