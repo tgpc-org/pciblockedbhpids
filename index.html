@@ -34,6 +34,7 @@
     .lede { font-size: 0.875rem; color: var(--muted); margin: 0 0 24px; }
     .lede p { margin: 0 0 6px; }
     .lede p:last-child { margin-bottom: 0; }
+    .count { font-size: 0.78rem; color: var(--muted); min-height: 1.15em; margin: 0; }
     .lede a { color: var(--link); font-weight: 600; text-decoration: none; }
     .lede a:hover { text-decoration: underline; }
     .search { display: flex; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; overflow: hidden; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); position: relative; }
@@ -48,7 +49,8 @@
       outline: none;
     }
     input:focus-visible { outline: none; }
-    #bhy { flex: 0 0 auto; width: 1ch; padding: 12px 0; }
+    #bhy { flex: 0 0 auto; width: 1ch; padding: 10px 0 8px; border-bottom: 2px solid var(--border); transition: border-color var(--transition-fast); }
+    #bhy:focus { border-bottom-color: var(--link); }
     .search:focus-within .prefix { color: var(--link); }
     .clear {
       width: 24px; height: 24px; border: none; border-radius: 999px;
@@ -68,6 +70,9 @@
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
     .card.suggest { background: var(--surface); border: 1px solid var(--border); }
+    .suggest-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .suggest-row:first-of-type { margin-top: 10px; padding-top: 0; border-top: none; }
+    .suggest-note { margin-top: 10px; }
     .card-title { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; }
     .dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
     .dot.red { background: var(--red); }
@@ -85,7 +90,7 @@
     .use:hover { border-color: var(--link); background: #fff; }
     .use:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
-    .foot { margin-top: 36px; font-size: 0.7rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.6; }
+    .foot { margin-top: 36px; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.6; }
     .foot a { color: var(--muted); }
     .foot a:hover { color: var(--ink); }
     .error-card { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 18px 20px; }
@@ -116,8 +121,8 @@
       </p>
       <p>
         <a href="https://pub-4591c8c5282040459ade2ed1e5e3d5be.r2.dev/notice/20261119PCIAnnexure1BlockedBHPIDs.pdf" target="_blank" rel="noopener">Annexure-1: List of Blocked BH-P IDs (PDF)</a>
-        <span id="count"></span>
       </p>
+      <p class="count" id="count"></p>
     </div>
 
     <div class="search" id="searchbox" role="search">
@@ -137,7 +142,7 @@
     <footer class="foot">
       Data: PCI Circular IT-11/3/2026-IT, Annexure-1 — 44,730 blocked IDs
       (2023: 4,334 · 2024: 8,756 · 2025: 23,688 · 2026: 7,952).
-      Unofficial reference — verify against the official circular before acting.
+      <br />Unofficial reference — verify against the official circular before acting.
     </footer>
   </main>
 
@@ -239,9 +244,9 @@
     // we must not say "Blocked". Show them as "Did you mean…?" instead.
     function suggestCard(alts) {
       const rows = alts.map(s =>
-        '<div style="margin-top:10px">' +
+        '<div class="suggest-row">' +
           '<div class="id">' + s.id + '</div>' +
-          '<p class="help" style="margin-top:4px">' + s.why + ' It is on the blocked list.</p>' +
+          '<p class="help">' + s.why + ' It is on the blocked list.</p>' +
           '<button type="button" class="use" data-id="' + s.id + '">Use this ID</button>' +
         '</div>'
       ).join('');
@@ -249,7 +254,7 @@
         '<div class="card suggest" role="status">' +
           '<div class="card-title">Did you mean one of these?</div>' +
           rows +
-          '<p class="help" style="margin-top:10px">Your entry does not exactly match a blocked ID. Check the digits and any leading zeros.</p>' +
+          '<p class="help suggest-note">Your entry does not exactly match a blocked ID. Check the digits and any leading zeros.</p>' +
         '</div>'
       );
     }
