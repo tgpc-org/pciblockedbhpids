@@ -90,6 +90,7 @@
     .use:hover { border-color: var(--link); background: #fff; }
     .use:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
+    .warn { font-size: 0.9rem; color: var(--red); padding: 20px 0; text-align: center; font-weight: 600; }
     .foot { margin-top: 36px; font-size: 0.75rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.6; }
     .foot a { color: var(--muted); }
     .foot a:hover { color: var(--ink); }
@@ -161,6 +162,7 @@
     let yearDigits = new Set();  // year digits present in the annexure ("3".."6")
     let fetchRetryCount = 0;
     const MAX_RETRIES = 3;
+    let yearError = null;
 
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
@@ -264,6 +266,7 @@
       clearBtn.hidden = !(y || n);
 
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
+      if (yearError) { result.innerHTML = '<p class="warn">' + yearError + '</p>'; return; }
       if (!(y || n)) {
         result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>';
         return;
@@ -345,31 +348,36 @@
 
       // "2X" with a valid year digit: absorb the decade prefix, year = X.
       if (raw.length >= 2 && raw.charAt(0) === '2' && /[3456]/.test(raw.charAt(1))) {
+        yearError = null;
         yearInput.value = raw.charAt(1);
         advance(raw.slice(2));
         render();
         return;
       }
-      // "2X" with an invalid year digit: keep X so the result can warn.
+      // "2X" with an invalid year digit: reject X, warn.
       if (raw.length >= 2 && raw.charAt(0) === '2') {
-        yearInput.value = raw.charAt(1);
+        yearError = 'Invalid year \u2014 only 3, 4, 5 or 6 (2023\u20132026).';
+        yearInput.value = '';
         render();
         return;
       }
       // Single valid year digit.
       if (/[3456]/.test(raw.charAt(0)) && raw.length === 1) {
+        yearError = null;
         yearInput.value = raw.charAt(0);
         advance('');
         render();
         return;
       }
-      // Otherwise keep the typed digit (if any) so invalid years warn.
+      // Single invalid digit: reject, warn.
       if (raw.length >= 1) {
-        yearInput.value = raw.charAt(0);
+        yearError = 'Invalid year \u2014 only 3, 4, 5 or 6 (2023\u20132026).';
+        yearInput.value = '';
         render();
         return;
       }
       yearInput.value = '';
+      yearError = null;
       render();
     });
 
@@ -410,6 +418,7 @@
     clearBtn.addEventListener('click', () => {
       yearInput.value = '';
       input.value = '';
+      yearError = null;
       yearInput.focus();
       render();
     });
@@ -424,6 +433,7 @@
       } else if (e.key === 'Escape') {
         yearInput.value = '';
         input.value = '';
+        yearError = null;
         yearInput.focus();
         render();
       }
@@ -439,6 +449,7 @@
           keys = Array.from(byKey.keys()).sort();
           yearDigits = new Set(keys.map(k => k.charAt(4)));
           loaded = true;
+          yearError = null;
           fetchRetryCount = 0;
           countEl.textContent = ids.length ? ' ' + ids.length.toLocaleString('en-IN') + ' IDs indexed.' : '';
           render();
