@@ -38,6 +38,7 @@
     .search:focus-within { border-color: var(--link); box-shadow: 0 0 0 3px var(--focus-ring); background: #fff; }
     .prefix { padding: 12px 0 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--muted); user-select: none; white-space: nowrap; }
     .const { padding: 12px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); user-select: none; white-space: nowrap; }
+    .dash { padding: 12px 1px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); user-select: none; white-space: nowrap; }
     input {
       flex: 1; min-width: 0; border: none; background: transparent;
       color: var(--ink); padding: 12px 14px 12px 0;
@@ -45,6 +46,7 @@
       outline: none;
     }
     input:focus-visible { outline: none; }
+    #bhy { flex: 0 0 auto; width: 1ch; padding: 12px 0; }
     .search:focus-within .prefix { color: var(--link); }
     .clear {
       width: 24px; height: 24px; border: none; border-radius: 999px;
@@ -60,7 +62,6 @@
     .card { border-radius: 12px; padding: 18px 20px; opacity: 1; transform: translateY(0); }
     @media (prefers-reduced-motion: no-preference) {
       .card { transition: opacity var(--transition-med), transform var(--transition-med); }
-      .card[hidden] { opacity: 0; transform: translateY(-4px); pointer-events: none; }
     }
     .card.blocked { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.3); }
     .card.ok { background: rgba(0,204,102,0.07); border: 1px solid rgba(0,204,102,0.3); }
@@ -73,7 +74,6 @@
     .id { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; color: var(--ink); word-break: break-all; }
     .help { margin-top: 8px; font-size: 0.85rem; color: var(--ink); opacity: 0.8; line-height: 1.5; }
     .muted { font-size: 0.9rem; color: var(--muted); padding: 20px 0; text-align: center; }
-    .hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
     .foot { margin-top: 36px; font-size: 0.7rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.5; }
     .foot a { color: var(--muted); }
     .foot a:hover { color: var(--ink); }
@@ -86,6 +86,7 @@
     }
     .retry-btn:hover { background: #1d4ed8; }
     .retry-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
     @media (max-width: 480px) {
       .wrap { padding: 20px 14px 40px; }
       h1 { font-size: 1.25rem; }
@@ -103,18 +104,20 @@
       <span id="count"></span>
     </p>
 
-    <div class="search" role="search">
+    <div class="search" id="searchbox" role="search">
       <span class="prefix">BH-P-</span>
       <span class="const">2</span>
-      <label for="bhq" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Search BH-P ID</label>
-      <input id="bhq" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
-             placeholder="x-xxxxx"
-             autofocus />
+      <label for="bhy" class="sr-only">Year digit</label>
+      <input id="bhy" type="text" inputmode="numeric" maxlength="1" autocomplete="off"
+             spellcheck="false" placeholder="X" autofocus />
+      <span class="dash">-</span>
+      <label for="bhq" class="sr-only">BH-P number</label>
+      <input id="bhq" type="text" inputmode="numeric" autocomplete="off"
+             spellcheck="false" placeholder="XXXXX" />
       <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
 
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
-
 
     <footer class="foot">
       Data: PCI Circular IT-11/3/2026-IT, Annexure-1 (44,730 IDs). Unofficial reference — verify against the official circular before acting.
@@ -123,6 +126,8 @@
 
   <script>
     const DATA_URL = './data/blocked-bhp-2026-11-19.json';
+    const box = document.getElementById('searchbox');
+    const yearInput = document.getElementById('bhy');
     const input = document.getElementById('bhq');
     const result = document.getElementById('result');
     const clearBtn = document.getElementById('clear');
@@ -133,84 +138,128 @@
     let fetchRetryCount = 0;
     const MAX_RETRIES = 3;
 
-    // The leading "2" of the year is fixed in the UI; rebuild the full ID from
-    // whatever was typed after it.
-    function normalize(raw) {
-      let v = (raw || '').trim().toUpperCase().replace(/[\s_]+/g, '');
-      if (!v) return '';
-      if (v.startsWith('BH-P-')) return v;       // pasted full ID
-      if (v.startsWith('BHP')) v = v.slice(3);   // BH-P dropped
-      v = v.replace(/^-+/, '');
-      if (!/^2\d/.test(v)) v = '2' + v;          // year's first digit is fixed
-      return 'BH-P-' + v;
-    }
-
     function key(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
+    // "BH-P-", the decade digit and the dash are fixed in the UI, so the full ID
+    // is rebuilt from the two inputs.
+    function currentId() {
+      const y = yearInput.value.replace(/\D/g, '').slice(0, 1);
+      const n = input.value.replace(/\D/g, '');
+      return { y, n, q: 'BH-P-2' + y + '-' + n };
+    }
+
     function render() {
-      const raw = input.value;
-      clearBtn.hidden = !raw;
+      const { y, n, q } = currentId();
+      const hasInput = y.length > 0 || n.length > 0;
+      clearBtn.hidden = !hasInput;
+
       if (!loaded) { result.innerHTML = '<p class="muted">Loading blocked IDs…</p>'; return; }
-      if (raw.trim().length === 0) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
+      if (!hasInput) { result.innerHTML = '<p class="muted">Type your BH-P number above to check whether it is on the blocked list.</p>'; return; }
+      if (y.length < 1 || n.length < 3) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
 
-      const q = normalize(raw);
       const qk = key(q);
-      const body = q.slice(5); // everything after "BH-P-"
-      const digits = body.replace(/\D/g, '');
+      const exact = ids.find(id => key(id) === qk);
 
-      // Need the second year digit, the dash and at least 4 suffix digits.
-      if (digits.length < 6) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
-
-      // Complete, well-formed ID (fixed "2", second year digit, hyphen, 4+ digits)
-      const wellFormed = /^2\d-\d{4,}$/.test(body);
-      if (wellFormed || ids.indexOf(q) !== -1) {
-        const exact = ids.find(id => key(id) === qk);
-        if (exact) {
-          result.innerHTML =
-            '<div class="card blocked" role="status">' +
-              '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
-              '<div class="id">' + exact + '</div>' +
-              '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
-            '</div>';
-        } else {
-          result.innerHTML =
-            '<div class="card ok" role="status">' +
-              '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
-              '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
-            '</div>';
-        }
+      if (exact) {
+        result.innerHTML =
+          '<div class="card blocked" role="status">' +
+            '<div class="card-title red"><span class="dot red"></span>Blocked</div>' +
+            '<div class="id">' + exact + '</div>' +
+            '<p class="help">This ID is on Annexure-1 of PCI circular IT-11/3/2026-IT. Re-register on <strong>DIGI-PHARMed</strong> with an Aadhaar-matching name and genuine educational records, then complete AEBAS registration.</p>' +
+          '</div>';
         return;
       }
 
-      // Enough characters, but not a valid BH-P shape → tell the user the format
-      result.innerHTML = '<p class="muted">Invalid format. Expected: <strong>BH-P-2x-xxxxx</strong> (e.g. BH-P-25-11457).</p>';
+      // A short suffix may still be unfinished — only 4+ digits is conclusive.
+      if (n.length < 4) { result.innerHTML = '<p class="muted">Keep typing…</p>'; return; }
+
+      result.innerHTML =
+        '<div class="card ok" role="status">' +
+          '<div class="card-title green"><span class="dot green"></span>Not on the blocked list</div>' +
+          '<p class="help">' + q + ' does not appear in Annexure-1. Verify against the official circular before acting.</p>' +
+        '</div>';
     }
 
-    // Keyboard shortcuts
+    // Fill both fields from a pasted ID, e.g. "BH-P-25-11457", "25-11457", "2511457".
+    function populate(text) {
+      let v = (text || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^BHP/, '');
+      if (!v) return;
+      // A full ID starts with the fixed decade digit; drop it, keep the rest.
+      if (v.length > 1 && v[0] === '2') v = v.slice(1);
+      yearInput.value = v.slice(0, 1).replace(/\D/g, '');
+      input.value = v.slice(1).replace(/\D/g, '');
+      if (input.value) input.focus(); else yearInput.focus();
+      render();
+    }
+
     function focusSearch() {
-      input.focus();
-      input.select();
+      if (yearInput.value === '') { yearInput.focus(); }
+      else { input.focus(); input.select(); }
     }
 
-    document.addEventListener('keydown', (e) => {
-      // Ctrl/Cmd+K or / (when not typing in input)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    // Typing the year digit jumps straight to the number field.
+    yearInput.addEventListener('input', () => {
+      const d = yearInput.value.replace(/\D/g, '');
+      if (d.length > 1) {
+        yearInput.value = d.slice(0, 1);
+        input.value = d.slice(1) + input.value.replace(/\D/g, '');
+      } else {
+        yearInput.value = d;
+      }
+      if (yearInput.value.length === 1) input.focus();
+      render();
+    });
+
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '');
+      render();
+    });
+
+    // Backspace at the start of the number field returns to the year digit.
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && input.value === '') {
         e.preventDefault();
-        focusSearch();
-      } else if (e.key === '/' && document.activeElement !== input) {
+        yearInput.focus();
+        yearInput.select();
+      }
+    });
+
+    yearInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && yearInput.value !== '') {
         e.preventDefault();
-        focusSearch();
-      } else if (e.key === 'Escape') {
-        input.value = '';
-        input.focus();
+        yearInput.value = '';
         render();
       }
     });
 
-    // Event listeners
-    input.addEventListener('input', render);
-    clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); });
-    input.addEventListener('input', () => { clearBtn.hidden = !input.value; });
+    box.addEventListener('paste', (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      if (!text) return;
+      e.preventDefault();
+      populate(text);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      yearInput.value = '';
+      input.value = '';
+      yearInput.focus();
+      render();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        focusSearch();
+      } else if (e.key === '/' && document.activeElement !== input && document.activeElement !== yearInput) {
+        e.preventDefault();
+        focusSearch();
+      } else if (e.key === 'Escape') {
+        yearInput.value = '';
+        input.value = '';
+        yearInput.focus();
+        render();
+      }
+    });
 
     // Load data with retry
     function loadData() {
