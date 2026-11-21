@@ -272,12 +272,6 @@
         result.innerHTML = '<p class="muted">Enter the year digit first — 3, 4, 5 or 6.</p>';
         return;
       }
-      // The leading "2" is already fixed, so a lone "2" is someone starting to
-      // type the full year (23–26) — wait for the second digit.
-      if (y === '2') {
-        result.innerHTML = '<p class="muted">Keep typing the year digit — 3, 4, 5 or 6.</p>';
-        return;
-      }
       if (!yearDigits.has(y)) {
         result.innerHTML = '<p class="muted">Annexure-1 only covers 2023–2026 registrations, so the year digit must be 3, 4, 5 or 6.</p>';
         return;
@@ -347,23 +341,31 @@
     }
 
     yearInput.addEventListener('input', () => {
-      // Only the valid registration-year digits (3, 4, 5, 6) may be entered.
-      // A leading "2" (decade prefix of "23".."26") is consumed and dropped,
-      // so typing "25" still yields year 5, and "2511457" carries the rest
-      // into the number. A lone or invalid "2" is rejected outright.
       const raw = yearInput.value.replace(/\D/g, '');
-      let yearDigit = null;
-      let rest = '';
+
+      // "2X" with a valid year digit: absorb the decade prefix, year = X.
       if (raw.length >= 2 && raw.charAt(0) === '2' && /[3456]/.test(raw.charAt(1))) {
-        yearDigit = raw.charAt(1);
-        rest = raw.slice(2);
-      } else if (/[3456]/.test(raw.charAt(0))) {
-        yearDigit = raw.charAt(0);
-        rest = raw.slice(1);
+        yearInput.value = raw.charAt(1);
+        advance(raw.slice(2));
+        render();
+        return;
       }
-      if (yearDigit) {
-        yearInput.value = yearDigit;
-        advance(rest);
+      // "2X" with an invalid year digit: keep X so the result can warn.
+      if (raw.length >= 2 && raw.charAt(0) === '2') {
+        yearInput.value = raw.charAt(1);
+        render();
+        return;
+      }
+      // Single valid year digit.
+      if (/[3456]/.test(raw.charAt(0)) && raw.length === 1) {
+        yearInput.value = raw.charAt(0);
+        advance('');
+        render();
+        return;
+      }
+      // Otherwise keep the typed digit (if any) so invalid years warn.
+      if (raw.length >= 1) {
+        yearInput.value = raw.charAt(0);
         render();
         return;
       }
