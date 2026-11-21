@@ -60,8 +60,6 @@
     .clear:active { transform: scale(0.95); }
     .clear[hidden] { display: none; }
     .clear:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-    .fmt { margin: 8px 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
-    .fmt code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em; color: var(--ink); }
     .result { margin-top: 18px; min-height: 3.5rem; }
     .card { border-radius: 12px; padding: 18px 20px; opacity: 1; transform: translateY(0); }
     @media (prefers-reduced-motion: no-preference) {
@@ -126,18 +124,13 @@
       <span class="const">2</span>
       <label for="bhy" class="sr-only">Year digit (3, 4, 5 or 6)</label>
       <input id="bhy" type="text" inputmode="numeric" maxlength="2" autocomplete="off"
-             spellcheck="false" placeholder="X" aria-describedby="fmt" autofocus />
+             spellcheck="false" placeholder="X" autofocus />
       <span class="dash">-</span>
       <label for="bhq" class="sr-only">BH-P number after the dash (3 to 10 digits)</label>
       <input id="bhq" type="text" inputmode="numeric" autocomplete="off"
-             spellcheck="false" placeholder="XXXXXXXXXX" aria-describedby="fmt" />
+             spellcheck="false" placeholder="XXXXXXXXXX" />
       <button id="clear" class="clear" aria-label="Clear search" hidden>×</button>
     </div>
-    <p class="fmt" id="fmt">
-      Annexure-1 prints the number as 3–10 digits, <strong>leading zeros included</strong> —
-      e.g. <code>BH-P-26-7443</code>, <code>BH-P-25-126772</code>, <code>BH-P-24-0770508730</code>.
-    </p>
-
     <div id="result" class="result" aria-live="polite" aria-atomic="true"></div>
 
     <footer class="foot">
