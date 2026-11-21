@@ -347,34 +347,23 @@
     }
 
     yearInput.addEventListener('input', () => {
-      // Only the decade prefix (2) and the valid year digits (3-6) may be entered.
-      const digits = yearInput.value.replace(/\D/g, '').replace(/[^23456]/g, '');
-
-      if (digits.length >= 2) {
-        // Absorb a leading "2" (the fixed decade) when followed by a valid year digit.
-        if (digits.charAt(0) === '2' && /[3456]/.test(digits.charAt(1))) {
-          yearInput.value = digits.charAt(1);
-          advance(digits.slice(2));
-          render();
-          return;
-        }
-        // No decade prefix: keep the first valid year digit.
-        const first = digits.split('').find(c => /[3456]/.test(c));
-        if (first) {
-          yearInput.value = first;
-          advance('');
-          render();
-          return;
-        }
-        yearInput.value = '';
-        render();
-        return;
+      // Only the valid registration-year digits (3, 4, 5, 6) may be entered.
+      // A leading "2" (decade prefix of "23".."26") is consumed and dropped,
+      // so typing "25" still yields year 5, and "2511457" carries the rest
+      // into the number. A lone or invalid "2" is rejected outright.
+      const raw = yearInput.value.replace(/\D/g, '');
+      let yearDigit = null;
+      let rest = '';
+      if (raw.length >= 2 && raw.charAt(0) === '2' && /[3456]/.test(raw.charAt(1))) {
+        yearDigit = raw.charAt(1);
+        rest = raw.slice(2);
+      } else if (/[3456]/.test(raw.charAt(0))) {
+        yearDigit = raw.charAt(0);
+        rest = raw.slice(1);
       }
-      if (digits.length === 1) {
-        yearInput.value = digits;
-        // A lone "2" is the start of the full year — wait for the next digit.
-        if (digits === '2') { render(); return; }
-        advance('');
+      if (yearDigit) {
+        yearInput.value = yearDigit;
+        advance(rest);
         render();
         return;
       }
